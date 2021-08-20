@@ -8,16 +8,15 @@ defaults:
     shell: bash
 
 jobs:
-  windows-installer:
+  installer:
 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest]
-        python-version: [3.9]
+        os: [macos-latest, windows-latest]
+        python-version: [3.8]
 
     steps:
-
     - name: Obtain SasView source from git
       uses: actions/checkout@v1
 
@@ -27,6 +26,16 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     ### Caching of pip downloads and local wheel builds
+
+    - name: Obtain pip cache (macOS)
+      uses: actions/cache@v2
+      if: startsWith(runner.os, 'macOS')
+      with:
+        path: ~/Library/Caches/pip
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/test.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ matrix.python-version }}-
+          ${{ runner.os }}-pip-
 
     - name: Obtain pip cache (Windows)
       uses: actions/cache@v2
@@ -46,7 +55,13 @@ jobs:
         python -m pip install wheel setuptools
         python -m pip install numpy scipy matplotlib docutils "pytest<6" sphinx unittest-xml-reporting tinycc lxml h5py sphinx pyparsing html5lib reportlab pybind11 appdirs six numba mako ipython qtconsole xhtml2pdf unittest-xml-reporting pylint qt5reactor periodictable PyQt5
 
+    - name: Install pyopencl (Linux + macOS)
+      if: ${{ matrix.os != 'windows-latest' }}
+      run: |
+        python -m pip install pyopencl
+
     - name: Install pyopencl (Windows)
+      if: ${{ matrix.os == 'windows-latest' }}
       run: |
         python -m pip install pytools mako cffi
         choco install opencl-intel-cpu-runtime
@@ -103,9 +118,24 @@ jobs:
         python build_sphinx.py || true
 
 
+    - name: Publish pyinstaller components
+      if: ${{ matrix.os == 'macos-latest' }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: SasView-PyInstaller-Dist-${{ matrix.os }}-${{ matrix.python-version }}-${{ github.sha }}
+        path: build/
+        if-no-files-found: error
+
     ### Build the installer
 
-    - name: Build sasview pyinstaller
+    - name: Build sasview pyinstaller (OSX)
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        cd installers
+        pyinstaller sasview.spec
+
+    - name: Build sasview pyinstaller (Windows)
+      if: ${{ matrix.os == 'windows-latest' }}
       run: |
         cd installers
         pyinstaller.exe sasview.spec
@@ -115,20 +145,57 @@ jobs:
         cd installers/dist
         tar zcf sasview-pyinstaller-dist.tar.gz sasview
 
-    - name: Publish pyinstaller components
-      uses: actions/upload-artifact@v2
-      with:
-        name: SasView-PyInstaller-Dist-${{ matrix.os }}-${{ matrix.python-version }}-${{ github.sha }}
-        path: installers/dist/sasview-pyinstaller-dist.tar.gz
-        if-no-files-found: error
-
     - name: Build sasview INNO setup package
+      if: ${{ matrix.os == 'windows-latest' }}
       run: |
         iscc installers/installer.iss
 
     - name: Publish installer package
+      if: ${{ matrix.os == 'windows-latest' }}
       uses: actions/upload-artifact@v2
       with:
         name: SasView-Installer-${{ matrix.os }}-${{ matrix.python-version }}-${{ github.sha }}
         path: installers/Output/setupSasView.exe
+        if-no-files-found: error
+
+    - name: Sign executable and create dmg
+      if: ${{ matrix.os == 'macos-latest' }}
+      env:
+        MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+        MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+      run: |
+        echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
+        security create-keychain -p DloaAcYP build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p DloaAcYP build.keychain
+        security import certificate.p12 -k build.keychain -P $MACOS_CERTIFICATE_PWD -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k DloaAcYP build.keychain
+
+        cd ../installers/dist
+        python  ../build_tools/code_sign_osx.py
+        codesign --verify  --entitlements ../../build_tools/entitlements.plist --timestamp --deep --verbose=4 --force --sign "Developer ID Application: European Spallation Source Eric (W2AG9MPZ43)" SasView5.app
+        hdiutil create SasView5.dmg -srcfolder SasView5.app -ov -format UDZO
+        codesign -s "Developer ID Application: European Spallation Source Eric (W2AG9MPZ43)" SasView5.dmg
+
+    - name: Notarize Release Build
+      if: ${{ matrix.os == 'macos-latest' }}
+      uses: devbotsxyz/xcode-notarize@v1
+      with:
+          product-path: "installers/dist/SasView5.dmg"
+          primary-bundle-id: "org.sasview.SasView5"
+          appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
+          appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
+
+    - name: Staple Release Build
+      if: ${{ matrix.os == 'macos-latest' }}
+      uses: devbotsxyz/xcode-staple@v1
+      with:
+          product-path: "installers/dist/SasView5.dmg"
+
+    - name: Publish installer package
+      if: ${{ matrix.os == 'macos-latest' }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: SasView-Installer-${{ matrix.os }}-${{ matrix.python-version }}-${{ github.sha }}
+        path: installers/dist/SasView5.dmg
         if-no-files-found: error
