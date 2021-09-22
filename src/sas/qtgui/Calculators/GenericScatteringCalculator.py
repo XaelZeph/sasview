@@ -529,13 +529,15 @@ class GenericScatteringCalculator(QtWidgets.QDialog, Ui_GenericScatteringCalcula
                     self, "Choose a file", "","All supported files (*.SLD *.sld *.pdb *.PDB);;"
                                             "SLD files (*.SLD *.sld);;"
                                             "PDB files (*.pdb *.PDB);;"
-                                            "All files (*.*)")[0]
+                                            "All files (*.*)", 
+                    options=QtWidgets.QFileDialog.DontUseNativeDialog | QtWidgets.QFileDialog.DontUseCustomDirectoryIcons)[0]
             else:
                 self.datafile = QtWidgets.QFileDialog.getOpenFileName(
                     self, "Choose a file", "","All supported files (*.OMF *.omf *.SLD *.sld);;"
                                             "OMF files (*.OMF *.omf);;"
                                             "SLD files (*.SLD *.sld);;"
-                                            "All files (*.*)")[0]
+                                            "All files (*.*)", 
+                    options=QtWidgets.QFileDialog.DontUseNativeDialog | QtWidgets.QFileDialog.DontUseCustomDirectoryIcons)[0]
             # If a file has been sucessfully chosen
             if self.datafile:
                 # set basic data about the file
