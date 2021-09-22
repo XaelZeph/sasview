@@ -92,7 +92,8 @@ class ImageViewer(QtWidgets.QMainWindow, Ui_ImageViewerUI):
                     "All files (*.*)"
 
         filepath = QtWidgets.QFileDialog.getOpenFileName(
-            self, "Choose a file", "", wildcards)[0]
+            self, "Choose a file", "", wildcards, 
+            options=QtWidgets.QFileDialog.DontUseNativeDialog | QtWidgets.QFileDialog.DontUseCustomDirectoryIcons)[0]
 
         if filepath:
             self.showImage(filepath)
