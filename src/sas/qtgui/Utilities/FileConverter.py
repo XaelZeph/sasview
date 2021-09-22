@@ -190,7 +190,8 @@ class FileConverterWidget(QtWidgets.QDialog, Ui_FileConverterUI):
         datafile = None
         try:
             datafile = QtWidgets.QFileDialog.getOpenFileName(
-                self, "Choose a file", "", "All files (*.*)")[0]
+                self, "Choose a file", "", "All files (*.*)",
+                options=QtWidgets.QFileDialog.DontUseNativeDialog | QtWidgets.QFileDialog.DontUseCustomDirectoryIcons)[0]
         except (RuntimeError, IOError) as ex:
             log_msg = "File Converter failed with: {}".format(ex)
             logging.error(log_msg)
@@ -298,7 +299,7 @@ class FileConverterWidget(QtWidgets.QDialog, Ui_FileConverterUI):
             'caption'   : 'Save As',
             'filter'    : wildcard,
             'parent'    : None,
-            'options'   : QtWidgets.QFileDialog.DontUseNativeDialog
+            'options'   : QtWidgets.QFileDialog.DontUseNativeDialog | QtWidgets.QFileDialog.DontUseCustomDirectoryIcons
         }
         # Query user for filename.
         filename_tuple = QtWidgets.QFileDialog.getSaveFileName(**kwargs)
