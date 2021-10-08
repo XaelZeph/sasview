@@ -50,6 +50,13 @@ from sas.qtgui.Perspectives.Fitting.MultiConstraint import MultiConstraint
 from sas.qtgui.Perspectives.Fitting.ReportPageLogic import ReportPageLogic
 from sas.qtgui.Perspectives.Fitting.OrderWidget import OrderWidget
 
+from sas.qtgui.Perspectives.Fitting import cylinder_plot
+from sas.qtgui.Perspectives.Fitting import ellipsoid_plot
+from sas.qtgui.Perspectives.Fitting import parallelepiped_plot
+from sas.qtgui.Perspectives.Fitting import sphere_plot
+
+
+
 TAB_MAGNETISM = 4
 TAB_POLY = 3
 TAB_ORDERING = 5
@@ -64,6 +71,7 @@ DEFAULT_POLYDISP_FUNCTION = 'gaussian'
 # CRUFT: remove when new release of sasmodels is available
 # https://github.com/SasView/sasview/pull/181#discussion_r218135162
 from sasmodels.sasview_model import SasviewModel
+
 if not hasattr(SasviewModel, 'get_weights'):
     def get_weights(self, name):
         """
@@ -73,15 +81,18 @@ if not hasattr(SasviewModel, 'get_weights'):
         _, x, w = self._get_weights(self._model_info.parameters[name])
         return x, w
 
+
     SasviewModel.get_weights = get_weights
 
 logger = logging.getLogger(__name__)
+
 
 class ToolTippedItemModel(QtGui.QStandardItemModel):
     """
     Subclass from QStandardItemModel to allow displaying tooltips in
     QTableView model.
     """
+
     def __init__(self, parent=None):
         QtGui.QStandardItemModel.__init__(self, parent)
 
@@ -98,6 +109,7 @@ class ToolTippedItemModel(QtGui.QStandardItemModel):
                 return str(self.header_tooltips[section])
 
         return QtGui.QStandardItemModel.headerData(self, section, orientation, role)
+
 
 class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
     """
@@ -518,7 +530,6 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
                 if key[-6:] == '.width':
                     self.kernel_module.setParam(key, (value if isChecked else 0))
 
-
     def toggleMagnetism(self, isChecked):
         """ Enable/disable the magnetism tab """
         self.tabFitting.setTabEnabled(TAB_MAGNETISM, isChecked)
@@ -683,15 +694,16 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
         self.actionSelect = QtWidgets.QAction(self)
         self.actionSelect.setObjectName("actionSelect")
-        self.actionSelect.setText(QtCore.QCoreApplication.translate("self", "Select "+param_string+" for fitting"))
+        self.actionSelect.setText(QtCore.QCoreApplication.translate("self", "Select " + param_string + " for fitting"))
         # Unselect from fitting
         self.actionDeselect = QtWidgets.QAction(self)
         self.actionDeselect.setObjectName("actionDeselect")
-        self.actionDeselect.setText(QtCore.QCoreApplication.translate("self", "De-select "+param_string+" from fitting"))
+        self.actionDeselect.setText(
+            QtCore.QCoreApplication.translate("self", "De-select " + param_string + " from fitting"))
 
         self.actionConstrain = QtWidgets.QAction(self)
         self.actionConstrain.setObjectName("actionConstrain")
-        self.actionConstrain.setText(QtCore.QCoreApplication.translate("self", "Constrain "+param_string + to_string))
+        self.actionConstrain.setText(QtCore.QCoreApplication.translate("self", "Constrain " + param_string + to_string))
 
         self.actionRemoveConstraint = QtWidgets.QAction(self)
         self.actionRemoveConstraint.setObjectName("actionRemoveConstrain")
@@ -703,11 +715,13 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
         self.actionMultiConstrain = QtWidgets.QAction(self)
         self.actionMultiConstrain.setObjectName("actionMultiConstrain")
-        self.actionMultiConstrain.setText(QtCore.QCoreApplication.translate("self", "Constrain selected parameters to their current values"))
+        self.actionMultiConstrain.setText(
+            QtCore.QCoreApplication.translate("self", "Constrain selected parameters to their current values"))
 
         self.actionMutualMultiConstrain = QtWidgets.QAction(self)
         self.actionMutualMultiConstrain.setObjectName("actionMutualMultiConstrain")
-        self.actionMutualMultiConstrain.setText(QtCore.QCoreApplication.translate("self", "Mutual constrain of selected parameters..."))
+        self.actionMutualMultiConstrain.setText(
+            QtCore.QCoreApplication.translate("self", "Mutual constrain of selected parameters..."))
 
         menu.addAction(self.actionSelect)
         menu.addAction(self.actionDeselect)
@@ -717,7 +731,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             menu.addAction(self.actionRemoveConstraint)
             if num_rows == 1 and has_real_constraints:
                 menu.addAction(self.actionEditConstraint)
-            #if num_rows == 1:
+            # if num_rows == 1:
             #    menu.addAction(self.actionEditConstraint)
         else:
             menu.addAction(self.actionConstrain)
@@ -746,7 +760,8 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         # Create and display the widget for param1 and param2
         mc_widget = MultiConstraint(self, params=params_list)
         # Check if any of the parameters are polydisperse
-        if not np.any([FittingUtilities.isParamPolydisperse(p, self.model_parameters, is2D=self.is2D) for p in params_list]):
+        if not np.any(
+                [FittingUtilities.isParamPolydisperse(p, self.model_parameters, is2D=self.is2D) for p in params_list]):
             # no parameters are pd - reset the text to not show the warning
             mc_widget.lblWarning.setText("")
         if mc_widget.exec_() != QtWidgets.QDialog.Accepted:
@@ -885,7 +900,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         min_col = self.lstParams.itemDelegate().param_min
         max_col = self.lstParams.itemDelegate().param_max
         for row in self.selectedParameters():
-            assert(self.isCheckable(row))
+            assert (self.isCheckable(row))
             param = self._model_model.item(row, 0).text()
             value = self._model_model.item(row, 1).text()
             min_t = self._model_model.item(row, min_col).text()
@@ -899,8 +914,8 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             # Assumed correctness from the validator
             value = float(value)
             # BUMPS calculates log(max-min) without any checks, so let's assign minor range
-            min_v = value - (value/10000.0)
-            max_v = value + (value/10000.0)
+            min_v = value - (value / 10000.0)
+            max_v = value + (value / 10000.0)
             # Set min/max to the value constrained
             self._model_model.item(row, min_col).setText(str(min_v))
             self._model_model.item(row, max_col).setText(str(max_v))
@@ -917,14 +932,15 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         Delete constraints from selected parameters.
         """
         params_list = [s.data() for s in self.lstParams.selectionModel().selectedRows()
-                   if self.isCheckable(s.row())]
+                       if self.isCheckable(s.row())]
         assert len(params_list) == 1
         row = self.lstParams.selectionModel().selectedRows()[0].row()
         constraint = self.getConstraintForRow(row)
         # Create and display the widget for param1 and param2
         mc_widget = MultiConstraint(self, params=params_list, constraint=constraint)
         # Check if any of the parameters are polydisperse
-        if not np.any([FittingUtilities.isParamPolydisperse(p, self.model_parameters, is2D=self.is2D) for p in params_list]):
+        if not np.any(
+                [FittingUtilities.isParamPolydisperse(p, self.model_parameters, is2D=self.is2D) for p in params_list]):
             # no parameters are pd - reset the text to not show the warning
             mc_widget.lblWarning.setText("")
         if mc_widget.exec_() != QtWidgets.QDialog.Accepted:
@@ -959,7 +975,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         Delete constraints from selected parameters.
         """
         params = [s.data() for s in self.lstParams.selectionModel().selectedRows()
-                   if self.isCheckable(s.row())]
+                  if self.isCheckable(s.row())]
         for param in params:
             self.deleteConstraintOnParameter(param=param)
 
@@ -1029,7 +1045,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         if param not in self.allParamNames(): return False
 
         for row in range(self._model_model.rowCount()):
-            if self._model_model.item(row,0).text() != param: continue
+            if self._model_model.item(row, 0).text() != param: continue
             return self.rowHasConstraint(row)
 
         # nothing found
@@ -1122,8 +1138,8 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         param_number = self._model_model.rowCount()
         params = [(self._model_model.item(s, 0).text(),
-                    self._model_model.item(s, 1).child(0).data().func)
-                    for s in range(param_number) if self.rowHasActiveConstraint(s)]
+                   self._model_model.item(s, 1).child(0).data().func)
+                  for s in range(param_number) if self.rowHasActiveConstraint(s)]
         return params
 
     def getComplexConstraintsForModel(self):
@@ -1135,8 +1151,8 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         param_number = self._model_model.rowCount()
         params = [(self._model_model.item(s, 0).text(),
-                    self._model_model.item(s, 1).child(0).data().func)
-                    for s in range(param_number) if self.rowHasActiveComplexConstraint(s)]
+                   self._model_model.item(s, 1).child(0).data().func)
+                  for s in range(param_number) if self.rowHasActiveComplexConstraint(s)]
         return params
 
     def getFullConstraintNameListForModel(self):
@@ -1148,8 +1164,8 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         param_number = self._model_model.rowCount()
         params = [(self._model_model.item(s, 0).text(),
-                    self._model_model.item(s, 1).child(0).data().func)
-                    for s in range(param_number) if self.rowHasConstraint(s)]
+                   self._model_model.item(s, 1).child(0).data().func)
+                  for s in range(param_number) if self.rowHasConstraint(s)]
         return params
 
     def getConstraintObjectsForModel(self):
@@ -1326,7 +1342,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         Reload the custom model combobox
         """
         ## If caching plugins, then force cache reset to reload plugins
-        #ModelManager().plugins_reset()
+        # ModelManager().plugins_reset()
         self.custom_models = self.customModels()
         self.readCustomCategoryInfo()
         self.onCategoriesChanged()
@@ -1364,7 +1380,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             func = self.getConstraintForRow(row).func
             if constr.func is not None:
                 # inter-parameter constraint
-                update_text = "Active constraint: "+func
+                update_text = "Active constraint: " + func
             elif constr.param == rows[0].data():
                 # current value constraint
                 update_text = "Value constrained to: " + str(constr.value)
@@ -1408,7 +1424,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             self.cmdPlot.setText("Calculate")
             # Create default datasets if no data passed
             self.createDefaultDataset()
-            self.theory_item = None # ensure theory is recalc. before plot, see showTheoryPlot()
+            self.theory_item = None  # ensure theory is recalc. before plot, see showTheoryPlot()
 
     def respondToModelStructure(self, model=None, structure_factor=None):
         # Set enablement on calculate/plot
@@ -1489,7 +1505,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         model_column = item.column()
         model_row = item.row()
         name_index = self._poly_model.index(model_row, 0)
-        parameter_name = str(name_index.data()) # "distribution of sld" etc.
+        parameter_name = str(name_index.data())  # "distribution of sld" etc.
         if "istribution of" in parameter_name:
             # just the last word
             parameter_name = parameter_name.rsplit()[-1]
@@ -1520,9 +1536,9 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             current_details = self.kernel_module.details[parameter_name_w]
             if self.has_poly_error_column:
                 # err column changes the indexing
-                current_details[model_column-2] = value
+                current_details[model_column - 2] = value
             else:
-                current_details[model_column-1] = value
+                current_details[model_column - 1] = value
 
         elif model_column == delegate.poly_function:
             # name of the function - just pass
@@ -1664,7 +1680,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         handler = None
         batch_inputs = {}
         batch_outputs = {}
-        #---------------------------------
+        # ---------------------------------
         if LocalConfig.USING_TWISTED:
             handler = None
             updater = None
@@ -1689,13 +1705,13 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         completefn = self.batchFittingCompleted if self.is_batch_fitting else self.fittingCompleted
 
         self.calc_fit = FitThread(handler=handler,
-                            fn=fitters,
-                            batch_inputs=batch_inputs,
-                            batch_outputs=batch_outputs,
-                            page_id=[[self.page_id]],
-                            updatefn=updater,
-                            completefn=completefn,
-                            reset_flag=self.is_chain_fitting)
+                                  fn=fitters,
+                                  batch_inputs=batch_inputs,
+                                  batch_outputs=batch_outputs,
+                                  page_id=[[self.page_id]],
+                                  updatefn=updater,
+                                  completefn=completefn,
+                                  reset_flag=self.is_chain_fitting)
 
         if LocalConfig.USING_TWISTED:
             # start the trhrhread with twisted
@@ -1720,7 +1736,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         if self.calc_fit is None or not self.calc_fit.isrunning():
             return
         self.calc_fit.stop()
-        #re-enable the Fit button
+        # re-enable the Fit button
         self.enableInteractiveElements()
 
         msg = "Fitting cancelled."
@@ -1736,7 +1752,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         """
         self.enableInteractiveElements()
-        msg = "Fitting failed with: "+ str(reason)
+        msg = "Fitting failed with: " + str(reason)
         self.communicate.statusBarUpdateSignal.emit(msg)
 
     def batchFittingCompleted(self, result):
@@ -1751,7 +1767,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         Receive and display batch fitting results
         """
-        #re-enable the Fit button
+        # re-enable the Fit button
         self.enableInteractiveElements()
 
         if len(result) == 0:
@@ -1797,18 +1813,18 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         formatted dict
         """
         if results.fitness is None or \
-            not np.isfinite(results.fitness) or \
-            np.any(results.pvec is None) or \
-            not np.all(np.isfinite(results.pvec)):
+                not np.isfinite(results.fitness) or \
+                np.any(results.pvec is None) or \
+                not np.all(np.isfinite(results.pvec)):
             msg = "Fitting did not converge!"
             self.communicate.statusBarUpdateSignal.emit(msg)
             msg += results.mesg
             logger.error(msg)
             return
 
-        param_list = results.param_list # ['radius', 'radius.width']
-        param_values = results.pvec     # array([ 0.36221662,  0.0146783 ])
-        param_stderr = results.stderr   # array([ 1.71293015,  1.71294233])
+        param_list = results.param_list  # ['radius', 'radius.width']
+        param_values = results.pvec  # array([ 0.36221662,  0.0146783 ])
+        param_stderr = results.stderr  # array([ 1.71293015,  1.71294233])
         params_and_errors = list(zip(param_values, param_stderr))
         param_dict = dict(zip(param_list, params_and_errors))
 
@@ -1827,7 +1843,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         Receive and display fitting results
         "result" is a tuple of actual result list and the fit time in seconds
         """
-        #re-enable the Fit button
+        # re-enable the Fit button
         self.enableInteractiveElements()
 
         if len(result) == 0:
@@ -1851,7 +1867,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         elapsed = result[1]
         if self.calc_fit is not None and self.calc_fit._interrupting:
             msg = "Fitting cancelled by user after: %s s." % GuiUtils.formatNumber(elapsed)
-            logger.warning("\n"+msg+"\n")
+            logger.warning("\n" + msg + "\n")
         else:
             msg = "Fitting completed successfully in: %s s." % GuiUtils.formatNumber(elapsed)
         self.communicate.statusBarUpdateSignal.emit(msg)
@@ -1915,12 +1931,12 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             weighted_data = self.addWeightingToData(data)
             try:
                 fitter_single.set_model(model, fit_id, params_to_fit, data=weighted_data,
-                             constraints=constraints)
+                                        constraints=constraints)
             except ValueError as ex:
                 raise ValueError("Setting model parameters failed with: %s" % ex)
 
             fitter_single.set_data(data=weighted_data, id=fit_id, smearer=smearer, qmin=qmin,
-                            qmax=qmax)
+                                   qmax=qmax)
             fitter_single.select_problem_for_fit(id=fit_id, value=1)
             if fitter is None:
                 # Assign id to the new fitter only
@@ -1961,26 +1977,28 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
         def updatePolyValues(row):
             # Utility function for updateof polydispersity part of the main model
-            param_name = str(self._model_model.item(row, 0).text())+'.width'
+            param_name = str(self._model_model.item(row, 0).text()) + '.width'
             if not self.isCheckable(row) or param_name not in list(param_dict.keys()):
                 return
             # modify the param value
             param_repr = GuiUtils.formatNumber(param_dict[param_name][0], high=True)
-            self._model_model.item(row, 0).child(0).child(0,1).setText(param_repr)
+            self._model_model.item(row, 0).child(0).child(0, 1).setText(param_repr)
             # modify the param error
             if self.has_error_column:
                 error_repr = GuiUtils.formatNumber(param_dict[param_name][1], high=True)
-                self._model_model.item(row, 0).child(0).child(0,2).setText(error_repr)
+                self._model_model.item(row, 0).child(0).child(0, 2).setText(error_repr)
 
         def createErrorColumn(row):
             # Utility function for error column update
             item = QtGui.QStandardItem()
+
             def createItem(param_name):
                 if param_name not in self.main_params_to_fit:
                     error_repr = ""
                 else:
                     error_repr = GuiUtils.formatNumber(param_dict[param_name][1], high=True)
                 item.setText(error_repr)
+
             def curr_param():
                 return str(self._model_model.item(row, 0).text())
 
@@ -2014,8 +2032,8 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             self._model_model.removeColumn(2)
             self.iterateOverModel(deletePolyErrorColumn)
 
-        #if not self.has_error_column:
-            # create top-level error column
+        # if not self.has_error_column:
+        # create top-level error column
         error_column = []
         self.lstParams.itemDelegate().addErrorColumn()
         self.iterateOverModel(createErrorColumn)
@@ -2138,12 +2156,14 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         def createErrorColumn(row):
             # Utility function for error column update
             item = QtGui.QStandardItem()
+
             def createItem(param_name):
                 if param_name in self.magnet_params_to_fit:
                     error_repr = GuiUtils.formatNumber(param_dict[param_name][1], high=True)
                 else:
                     error_repr = ""
                 item.setText(error_repr)
+
             def curr_param():
                 return str(self._magnet_model.item(row, 0).text())
 
@@ -2270,7 +2290,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         # Create default datasets if no data passed
         if self.is2D:
-            qmax = self.q_range_max/np.sqrt(2)
+            qmax = self.q_range_max / np.sqrt(2)
             qstep = self.npts
             self.logic.createDefault2dData(qmax, qstep, self.tab_id)
             return
@@ -2309,7 +2329,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         Reads the custom model category
         """
-        #Looking for plugins
+        # Looking for plugins
         self.plugins = list(self.custom_models.values())
         plugin_list = []
         for name, plug in self.custom_models.items():
@@ -2337,7 +2357,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         assert isinstance(model, QtGui.QStandardItemModel)
         checked_list = ['background', '0.001', '-inf', 'inf', '1/cm']
         FittingUtilities.addCheckedListToModel(model, checked_list)
-        last_row = model.rowCount()-1
+        last_row = model.rowCount() - 1
         model.item(last_row, 0).setEditable(False)
         model.item(last_row, 4).setEditable(False)
 
@@ -2348,7 +2368,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         assert isinstance(model, QtGui.QStandardItemModel)
         checked_list = ['scale', '1.0', '0.0', 'inf', '']
         FittingUtilities.addCheckedListToModel(model, checked_list)
-        last_row = model.rowCount()-1
+        last_row = model.rowCount() - 1
         model.item(last_row, 0).setEditable(False)
         model.item(last_row, 4).setEditable(False)
 
@@ -2386,6 +2406,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         Setting model parameters into table based on selected category
         """
+
         # Crete/overwrite model items
         self._model_model.clear()
         self._poly_model.clear()
@@ -2437,7 +2458,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         kernel_module = None
         if self.cbCategory.currentText() == CATEGORY_CUSTOM:
             # custom kernel load requires full path
-            name = os.path.join(models.find_plugins_dir(), model_name+".py")
+            name = os.path.join(models.find_plugins_dir(), model_name + ".py")
         try:
             kernel_module = generate.load_kernel_module(name)
         except ModuleNotFoundError as ex:
@@ -2453,7 +2474,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             try:
                 kernel_module = generate.load_kernel_module(name)
             except ModuleNotFoundError as ex:
-                logger.error("Can't find the model "+ str(ex))
+                logger.error("Can't find the model " + str(ex))
                 return
 
         if hasattr(kernel_module, 'model_info'):
@@ -2497,17 +2518,17 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
         # Update the QModel
         FittingUtilities.addParametersToModel(
-                self.model_parameters,
-                self.kernel_module,
-                self.is2D,
-                self._model_model,
-                self.lstParams)
+            self.model_parameters,
+            self.kernel_module,
+            self.is2D,
+            self._model_model,
+            self.lstParams)
 
     def fromStructureFactorToQModel(self, structure_factor):
         """
         Setting model parameters into QStandardItemModel based on selected structure factor
         """
-        if structure_factor is None or structure_factor=="None":
+        if structure_factor is None or structure_factor == "None":
             return
 
         product_params = None
@@ -2528,21 +2549,21 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         # Get new rows for QModel
         # Any renamed parameters are stored as data in the relevant item, for later handling
         FittingUtilities.addSimpleParametersToModel(
-                parameters=s_params,
-                is2D=self.is2D,
-                parameters_original=None,
-                model=self._model_model,
-                view=self.lstParams)
+            parameters=s_params,
+            is2D=self.is2D,
+            parameters_original=None,
+            model=self._model_model,
+            view=self.lstParams)
 
         # Insert product-only params into QModel
         if product_params:
             prod_rows = FittingUtilities.addSimpleParametersToModel(
-                    parameters=product_params,
-                    is2D=self.is2D,
-                    parameters_original=None,
-                    model=self._model_model,
-                    view=self.lstParams,
-                    row_num=2)
+                parameters=product_params,
+                is2D=self.is2D,
+                parameters_original=None,
+                model=self._model_model,
+                view=self.lstParams,
+                row_num=2)
 
             # Since this all happens after shells are dealt with and we've inserted rows, fix this counter
             self._n_shells_row += len(prod_rows)
@@ -2574,6 +2595,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
                 if p.id == key:
                     return k
             return -1
+
         p_volfrac_id = par_index(p_info, VOLFRAC_ID)
         s_volfrac_id = par_index(s_info, VOLFRAC_ID)
         s_pars = s_info.parameters.kernel_parameters[:]
@@ -2611,6 +2633,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         Callback method for updating the sasmodel parameters with the GUI values
         """
+
         item = self._model_model.itemFromIndex(top)
 
         model_column = item.column()
@@ -2667,6 +2690,9 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         # Update state stack
         self.updateUndo()
         self.page_parameters = self.getParameterDict()
+
+
+
 
     def processEffectiveRadius(self):
         """
@@ -2735,7 +2761,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         Checks/unchecks the checkbox at given row
         """
-        assert 0<= row <= self._model_model.rowCount()
+        assert 0 <= row <= self._model_model.rowCount()
         index = self._model_model.index(row, 0)
         item = self._model_model.itemFromIndex(index)
         if checkbox_status:
@@ -2762,6 +2788,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         Returns list of checked parameters for given model
         """
+
         def isChecked(row):
             return model.item(row, 0).checkState() == QtCore.Qt.Checked
 
@@ -2876,19 +2903,19 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         self.disableInteractiveElementsOnCalculate()
         # Awful API to a backend method.
         calc_thread = self.methodCalculateForData()(data=data,
-                                               model=model,
-                                               page_id=0,
-                                               qmin=self.q_range_min,
-                                               qmax=self.q_range_max,
-                                               smearer=smearer,
-                                               state=None,
-                                               weight=weight,
-                                               fid=None,
-                                               toggle_mode_on=False,
-                                               completefn=completefn,
-                                               update_chisqr=True,
-                                               exception_handler=self.calcException,
-                                               source=None)
+                                                    model=model,
+                                                    page_id=0,
+                                                    qmin=self.q_range_min,
+                                                    qmax=self.q_range_max,
+                                                    smearer=smearer,
+                                                    state=None,
+                                                    weight=weight,
+                                                    fid=None,
+                                                    toggle_mode_on=False,
+                                                    completefn=completefn,
+                                                    update_chisqr=True,
+                                                    exception_handler=self.calcException,
+                                                    source=None)
         if use_threads:
             if LocalConfig.USING_TWISTED:
                 # start the thread with twisted
@@ -2907,6 +2934,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         Prepare the fitting data object, based on current ModelModel
         """
+
         if self.kernel_module is None:
             return
         self.calculateQGridForModelExt()
@@ -2921,6 +2949,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
     def completed1D(self, return_data):
         self.Calc1DFinishedSignal.emit(return_data)
+
 
     def completed2D(self, return_data):
         self.Calc2DFinishedSignal.emit(return_data)
@@ -2950,8 +2979,8 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
         # Fits of Sesans data are in real space
         if return_data["data"].isSesans:
-            fitted_data.xtransform="x"
-            fitted_data.ytransform="y"
+            fitted_data.xtransform = "x"
+            fitted_data.ytransform = "y"
 
         # assure the current index is set properly for batch
         if len(self._logic) > 1:
@@ -2999,6 +3028,13 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
         # Update radius_effective if relevant
         self.updateEffectiveRadius(return_data)
+
+        ### TEST
+
+        param = self.getParameterDict()
+
+
+
 
     def complete2D(self, return_data):
         """
@@ -3078,7 +3114,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             return
 
         # Calculate difference between return_data and logic.data
-        weights = FittingUtilities.getWeight(self.data, self.is2D, flag = self.weighting)
+        weights = FittingUtilities.getWeight(self.data, self.is2D, flag=self.weighting)
         # Recalculate chi2 only for manual parameter change, not after fitting
         if not self.fitResults:
             self.chi2 = FittingUtilities.calculateChi2(weighted_data, self.data, weights)
@@ -3096,32 +3132,32 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         return residuals_plot
 
     def onCategoriesChanged(self):
-            """
+        """
             Reload the category/model comboboxes
             """
-            # Store the current combo indices
-            current_cat = self.cbCategory.currentText()
-            current_model = self.cbModel.currentText()
+        # Store the current combo indices
+        current_cat = self.cbCategory.currentText()
+        current_model = self.cbModel.currentText()
 
-            # reread the category file and repopulate the combo
-            self.cbCategory.blockSignals(True)
-            self.cbCategory.clear()
-            self.readCategoryInfo()
-            self.initializeCategoryCombo()
+        # reread the category file and repopulate the combo
+        self.cbCategory.blockSignals(True)
+        self.cbCategory.clear()
+        self.readCategoryInfo()
+        self.initializeCategoryCombo()
 
-            # Scroll back to the original index in Categories
-            new_index = self.cbCategory.findText(current_cat)
-            if new_index != -1:
-                self.cbCategory.setCurrentIndex(new_index)
-            self.cbCategory.blockSignals(False)
-            # ...and in the Models
-            self.cbModel.blockSignals(True)
-            new_index = self.cbModel.findText(current_model)
-            if new_index != -1:
-                self.cbModel.setCurrentIndex(new_index)
-            self.cbModel.blockSignals(False)
+        # Scroll back to the original index in Categories
+        new_index = self.cbCategory.findText(current_cat)
+        if new_index != -1:
+            self.cbCategory.setCurrentIndex(new_index)
+        self.cbCategory.blockSignals(False)
+        # ...and in the Models
+        self.cbModel.blockSignals(True)
+        new_index = self.cbModel.findText(current_model)
+        if new_index != -1:
+            self.cbModel.setCurrentIndex(new_index)
+        self.cbModel.blockSignals(False)
 
-            return
+        return
 
     def calcException(self, etype, value, tb):
         """
@@ -3150,8 +3186,8 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
         # Qt5: the following 2 lines crash - figure out why!
         # Resize column 0 and 7 to content
-        #header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
-        #header.setSectionResizeMode(7, QtWidgets.QHeaderView.ResizeToContents)
+        # header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        # header.setSectionResizeMode(7, QtWidgets.QHeaderView.ResizeToContents)
 
     def setPolyModel(self):
         """
@@ -3166,7 +3202,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             parameters += self.model_parameters.orientation_parameters
 
         [self.setPolyModelParameters(i, param) for i, param in \
-            enumerate(parameters) if param.polydisperse]
+         enumerate(parameters) if param.polydisperse]
 
         FittingUtilities.addPolyHeadersToModel(self._poly_model)
 
@@ -3182,7 +3218,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
                 return
             else:
                 # Create as many entries as current shells
-                for ishell in range(1, self.current_shell_displayed+1):
+                for ishell in range(1, self.current_shell_displayed + 1):
                     # Remove [n] and add the shell numeral
                     name = param_name[0:param_name.index('[')] + str(ishell)
                     self.addNameToPolyModel(i, name)
@@ -3211,7 +3247,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         # Note: last argument needs extra space padding for decent display of the control
         checked_list = ["Distribution of " + param_name, str(width),
                         str(min), str(max),
-                        str(npts), str(nsigs), "gaussian      ",'']
+                        str(npts), str(nsigs), "gaussian      ", '']
         FittingUtilities.addCheckedListToModel(self._poly_model, checked_list)
 
         # All possible polydisp. functions as strings in combobox
@@ -3219,7 +3255,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         func.addItems([str(name_disp) for name_disp in POLYDISPERSITY_MODELS.keys()])
         # Set the default index
         func.setCurrentIndex(func.findText(DEFAULT_POLYDISP_FUNCTION))
-        ind = self._poly_model.index(i,self.lstPoly.itemDelegate().poly_function)
+        ind = self._poly_model.index(i, self.lstPoly.itemDelegate().poly_function)
         self.lstPoly.setIndexWidget(ind, func)
         func.currentIndexChanged.connect(lambda: self.onPolyComboIndexChange(str(func.currentText()), i))
 
@@ -3261,15 +3297,15 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             if not self.isCheckable(row):
                 return
             param_name = self._model_model.item(row, 0).text()
-            if param_name !=  param.name:
+            if param_name != param.name:
                 return
             # Modify the param value
             self._model_model.blockSignals(True)
             if self.has_error_column:
                 # err column changes the indexing
-                self._model_model.item(row, 0).child(0).child(0,5).setText(combo_string)
+                self._model_model.item(row, 0).child(0).child(0, 5).setText(combo_string)
             else:
-                self._model_model.item(row, 0).child(0).child(0,4).setText(combo_string)
+                self._model_model.item(row, 0).child(0).child(0, 4).setText(combo_string)
             self._model_model.blockSignals(False)
 
         if combo_string == 'array':
@@ -3334,6 +3370,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
         values = []
         weights = []
+
         def appendData(data_tuple):
             """
             Fish out floats from a tuple of strings
@@ -3391,9 +3428,9 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         multi_names = [p.name[:p.name.index('[')] for p in self.model_parameters.iq_parameters if '[' in p.name]
         top_index = self.kernel_module.multiplicity_info.number
         shell_names = []
-        for i in range(1, top_index+1):
+        for i in range(1, top_index + 1):
             for name in multi_names:
-                shell_names.append(name+str(i))
+                shell_names.append(name + str(i))
         return shell_names
 
     def addCheckedMagneticListToModel(self, param, value):
@@ -3468,8 +3505,8 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
         # Beautify the row:  span columns 2-4
         shell_row = self._model_model.rowCount()
-        shell_index = self._model_model.index(shell_row-1, 1)
-        button_index = self._model_model.index(shell_row-1, 4)
+        shell_index = self._model_model.index(shell_row - 1, 1)
+        button_index = self._model_model.index(shell_row - 1, 4)
 
         self.lstParams.setIndexWidget(shell_index, func)
         self.lstParams.setIndexWidget(button_index, button)
@@ -3481,7 +3518,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         for par in kernel_pars:
             parname = par.name
             if '[' in parname:
-                 parname = parname[:parname.index('[')]
+                parname = parname[:parname.index('[')]
             if parname == param_name:
                 shell_par = par
                 break
@@ -3499,11 +3536,11 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             pass
         except OverflowError:
             # Try to limit shell_par, if possible
-            if float(shell_par.limits[1])==np.inf:
+            if float(shell_par.limits[1]) == np.inf:
                 shell_max = 9
             logging.warning("Limiting shell count to 9.")
         except Exception as ex:
-            logging.error("Badly defined multiplicity: "+ str(ex))
+            logging.error("Badly defined multiplicity: " + str(ex))
             return
         # don't update the kernel here - this data is display only
         self._model_model.blockSignals(True)
@@ -3512,13 +3549,13 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         self._model_model.blockSignals(False)
 
         ## Respond to index change
-        #func.currentTextChanged.connect(self.modifyShellsInList)
+        # func.currentTextChanged.connect(self.modifyShellsInList)
 
         # Respond to button press
         button.clicked.connect(self.onShowSLDProfile)
 
         # Available range of shells displayed in the combobox
-        func.addItems([str(i) for i in range(shell_min, shell_max+1)])
+        func.addItems([str(i) for i in range(shell_min, shell_max + 1)])
 
         # Respond to index change
         func.currentTextChanged.connect(self.modifyShellsInList)
@@ -3545,11 +3582,11 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             self._model_model.removeRows(first_row, remove_rows)
 
         new_rows = FittingUtilities.addShellsToModel(
-                self.model_parameters,
-                self._model_model,
-                index,
-                first_row,
-                self.lstParams)
+            self.model_parameters,
+            self._model_model,
+            index,
+            first_row,
+            self.lstParams)
 
         self._num_shell_params = len(new_rows)
         self.current_shell_displayed = index
@@ -3590,8 +3627,8 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         profile_data._xunit = "\AA"
         profile_data._yaxis = "SLD"
         profile_data._yunit = "10^{-6}\AA^{-2}"
-        profile_data.ytransform='y'
-        profile_data.xtransform='x'
+        profile_data.ytransform = 'y'
+        profile_data.xtransform = 'x'
 
         profile_data.id = "sld"
 
@@ -3743,7 +3780,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         fp.fit_options[fp.MIN_RANGE] = self.q_range_min
         fp.fit_options[fp.MAX_RANGE] = self.q_range_max
         fp.fit_options[fp.NPTS] = self.npts
-        #fp.fit_options[fp.NPTS_FIT] = self.npts_fit
+        # fp.fit_options[fp.NPTS_FIT] = self.npts_fit
         fp.fit_options[fp.LOG_POINTS] = self.log_points
         fp.fit_options[fp.WEIGHTING] = self.weighting
 
@@ -3805,11 +3842,11 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
                                        kernel_module=self.kernel_module,
                                        data=self.data,
                                        index=index,
-                                       params=params+poly_params+magnet_params)
+                                       params=params + poly_params + magnet_params)
 
         return report_logic.reportList()
 
-    def loadPageStateCallback(self,state=None, datainfo=None, format=None):
+    def loadPageStateCallback(self, state=None, datainfo=None, format=None):
         """
         This is a callback method called from the CANSAS reader.
         We need the instance of this reader only for writing out a file,
@@ -3827,7 +3864,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             return
 
         with open(filepath, 'r') as statefile:
-            #column_data = [line.rstrip().split() for line in statefile.readlines()]
+            # column_data = [line.rstrip().split() for line in statefile.readlines()]
             lines = statefile.readlines()
 
         # convert into list of lists
@@ -3837,13 +3874,13 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         """
         Called when the "Open Project" menu item chosen.
         """
-        default_name = "FitPage"+str(self.tab_id)+".fitv"
+        default_name = "FitPage" + str(self.tab_id) + ".fitv"
         wildcard = "fitv files (*.fitv)"
         kwargs = {
-            'caption'   : 'Open Analysis',
-            'directory' : default_name,
-            'filter'    : wildcard,
-            'parent'    : self,
+            'caption': 'Open Analysis',
+            'directory': default_name,
+            'filter': wildcard,
+            'parent': self,
         }
         filename = QtWidgets.QFileDialog.getOpenFileName(**kwargs)[0]
         return filename
@@ -3873,7 +3910,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         plain, excel, latex
         """
         param_list = self.getFitParameters()
-        if format=="":
+        if format == "":
             param_list = self.getFitPage()
             param_list += self.getFitModel()
             formatted_output = FittingUtilities.formatParameters(param_list)
@@ -3889,7 +3926,6 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             raise AttributeError("Bad parameter output format specifier.")
 
         # Dump formatted_output to the clipboard
-
 
         if format == "Save":
             save_dialog = QtWidgets.QFileDialog()
@@ -3919,7 +3955,6 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         else:
             cb = QtWidgets.QApplication.clipboard()
             cb.setText(formatted_output)
-
 
     def getFitModel(self):
         """
@@ -4027,10 +4062,10 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             column_offset = 0
             if self.has_error_column:
                 column_offset = 1
-                param_error = str(self._model_model.item(row, 1+column_offset).text())
+                param_error = str(self._model_model.item(row, 1 + column_offset).text())
             try:
-                param_min = str(self._model_model.item(row, 2+column_offset).text())
-                param_max = str(self._model_model.item(row, 3+column_offset).text())
+                param_min = str(self._model_model.item(row, 2 + column_offset).text())
+                param_max = str(self._model_model.item(row, 3 + column_offset).text())
             except:
                 pass
             # Do we have any constraints on this parameter?
@@ -4045,7 +4080,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
                 cons = (value, param, value_ex, validate, func)
 
-            param_list.append([param_name, param_checked, param_value,param_error, param_min, param_max, cons])
+            param_list.append([param_name, param_checked, param_value, param_error, param_min, param_max, cons])
 
         def gatherPolyParams(row):
             """
@@ -4058,18 +4093,18 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             column_offset = 0
             if self.has_poly_error_column:
                 column_offset = 1
-                param_error = str(self._poly_model.item(row, 1+column_offset).text())
-            param_min   = str(self._poly_model.item(row, 2+column_offset).text())
-            param_max   = str(self._poly_model.item(row, 3+column_offset).text())
-            param_npts  = str(self._poly_model.item(row, 4+column_offset).text())
-            param_nsigs = str(self._poly_model.item(row, 5+column_offset).text())
-            param_fun   = str(self._poly_model.item(row, 6+column_offset).text()).rstrip()
-            index = self._poly_model.index(row, 6+column_offset)
+                param_error = str(self._poly_model.item(row, 1 + column_offset).text())
+            param_min = str(self._poly_model.item(row, 2 + column_offset).text())
+            param_max = str(self._poly_model.item(row, 3 + column_offset).text())
+            param_npts = str(self._poly_model.item(row, 4 + column_offset).text())
+            param_nsigs = str(self._poly_model.item(row, 5 + column_offset).text())
+            param_fun = str(self._poly_model.item(row, 6 + column_offset).text()).rstrip()
+            index = self._poly_model.index(row, 6 + column_offset)
             widget = self.lstPoly.indexWidget(index)
             if widget is not None and isinstance(widget, QtWidgets.QComboBox):
                 param_fun = widget.currentText()
             # width
-            name = param_name+".width"
+            name = param_name + ".width"
             param_list.append([name, param_checked, param_value, param_error,
                                param_min, param_max, param_npts, param_nsigs, param_fun])
 
@@ -4084,9 +4119,9 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             column_offset = 0
             if self.has_magnet_error_column:
                 column_offset = 1
-                param_error = str(self._magnet_model.item(row, 1+column_offset).text())
-            param_min = str(self._magnet_model.item(row, 2+column_offset).text())
-            param_max = str(self._magnet_model.item(row, 3+column_offset).text())
+                param_error = str(self._magnet_model.item(row, 1 + column_offset).text())
+            param_min = str(self._magnet_model.item(row, 2 + column_offset).text())
+            param_max = str(self._magnet_model.item(row, 3 + column_offset).text())
             param_list.append([param_name, param_checked, param_value,
                                param_error, param_min, param_max])
 
@@ -4156,19 +4191,19 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             multip = int(line_dict['multiplicity'][0], 0)
             # reset the model with multiplicity, so further updates are saved
             if self.kernel_module.is_multiplicity_model:
-                self.kernel_module.multiplicity=multip
+                self.kernel_module.multiplicity = multip
                 self.updateMultiplicityCombo(multip)
 
         if 'tab_name' in line_dict.keys() and self.kernel_module is not None:
             self.kernel_module.name = line_dict['tab_name'][0]
         if 'polydisperse_params' in line_dict.keys():
-            self.chkPolydispersity.setChecked(line_dict['polydisperse_params'][0]=='True')
+            self.chkPolydispersity.setChecked(line_dict['polydisperse_params'][0] == 'True')
         if 'magnetic_params' in line_dict.keys():
-            self.chkMagnetism.setChecked(line_dict['magnetic_params'][0]=='True')
+            self.chkMagnetism.setChecked(line_dict['magnetic_params'][0] == 'True')
         if 'chainfit_params' in line_dict.keys():
-            self.chkChainFit.setChecked(line_dict['chainfit_params'][0]=='True')
+            self.chkChainFit.setChecked(line_dict['chainfit_params'][0] == 'True')
         if '2D_params' in line_dict.keys():
-            self.chk2DView.setChecked(line_dict['2D_params'][0]=='True')
+            self.chk2DView.setChecked(line_dict['2D_params'][0] == 'True')
 
         # Create the context dictionary for parameters
         context['model_name'] = model
@@ -4216,7 +4251,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             if 'weighting' in line_dict.keys():
                 button_id = int(line_dict['weighting'][0])
                 for button in self.options_widget.weightingGroup.buttons():
-                    if abs(self.options_widget.weightingGroup.id(button)) == button_id+2:
+                    if abs(self.options_widget.weightingGroup.id(button)) == button_id + 2:
                         button.setChecked(True)
                         break
         except ValueError:
@@ -4262,7 +4297,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
                 index = self._model_model.index(row, 1)
                 widget = self.lstParams.indexWidget(index)
                 if widget is not None and isinstance(widget, QtWidgets.QComboBox):
-                    #widget.setCurrentIndex(combo_index)
+                    # widget.setCurrentIndex(combo_index)
                     return
             # checkbox state
             param_checked = QtCore.Qt.Checked if param_dict[param_name][0] == "True" else QtCore.Qt.Unchecked
@@ -4284,15 +4319,15 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             # Potentially the error column
             ioffset = 0
             joffset = 0
-            if len(param_dict[param_name])>5:
+            if len(param_dict[param_name]) > 5:
                 # error values are not editable - no need to update
                 ioffset = 1
             if self.has_error_column:
                 joffset = 1
             # min/max
             try:
-                self._model_model.item(row, 2+joffset).setText(param_dict[param_name][2+ioffset])
-                self._model_model.item(row, 3+joffset).setText(param_dict[param_name][3+ioffset])
+                self._model_model.item(row, 2 + joffset).setText(param_dict[param_name][2 + ioffset])
+                self._model_model.item(row, 3 + joffset).setText(param_dict[param_name][3 + ioffset])
             except:
                 pass
 
@@ -4318,7 +4353,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
                 return
             # checkbox state
             param_checked = QtCore.Qt.Checked if param_dict[param_name][0] == "True" else QtCore.Qt.Unchecked
-            self._poly_model.item(row,0).setCheckState(param_checked)
+            self._poly_model.item(row, 0).setCheckState(param_checked)
 
             # modify the param value
             param_repr = GuiUtils.formatNumber(param_dict[param_name][1], high=True)
@@ -4327,22 +4362,22 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             # Potentially the error column
             ioffset = 0
             joffset = 0
-            if len(param_dict[param_name])>7:
+            if len(param_dict[param_name]) > 7:
                 ioffset = 1
             if self.has_poly_error_column:
                 joffset = 1
             # min
-            param_repr = GuiUtils.formatNumber(param_dict[param_name][2+ioffset], high=True)
-            self._poly_model.item(row, 2+joffset).setText(param_repr)
+            param_repr = GuiUtils.formatNumber(param_dict[param_name][2 + ioffset], high=True)
+            self._poly_model.item(row, 2 + joffset).setText(param_repr)
             # max
-            param_repr = GuiUtils.formatNumber(param_dict[param_name][3+ioffset], high=True)
-            self._poly_model.item(row, 3+joffset).setText(param_repr)
+            param_repr = GuiUtils.formatNumber(param_dict[param_name][3 + ioffset], high=True)
+            self._poly_model.item(row, 3 + joffset).setText(param_repr)
             # Npts
-            param_repr = GuiUtils.formatNumber(param_dict[param_name][4+ioffset], high=True)
-            self._poly_model.item(row, 4+joffset).setText(param_repr)
+            param_repr = GuiUtils.formatNumber(param_dict[param_name][4 + ioffset], high=True)
+            self._poly_model.item(row, 4 + joffset).setText(param_repr)
             # Nsigs
-            param_repr = GuiUtils.formatNumber(param_dict[param_name][5+ioffset], high=True)
-            self._poly_model.item(row, 5+joffset).setText(param_repr)
+            param_repr = GuiUtils.formatNumber(param_dict[param_name][5 + ioffset], high=True)
+            self._poly_model.item(row, 5 + joffset).setText(param_repr)
 
             self.setFocus()
 
@@ -4366,7 +4401,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
                 return
             # checkbox state
             param_checked = QtCore.Qt.Checked if param_dict[param_name][0] == "True" else QtCore.Qt.Unchecked
-            self._magnet_model.item(row,0).setCheckState(param_checked)
+            self._magnet_model.item(row, 0).setCheckState(param_checked)
 
             # modify the param value
             param_repr = GuiUtils.formatNumber(param_dict[param_name][1], high=True)
@@ -4375,16 +4410,16 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
             # Potentially the error column
             ioffset = 0
             joffset = 0
-            if len(param_dict[param_name])>4:
+            if len(param_dict[param_name]) > 4:
                 ioffset = 1
             if self.has_magnet_error_column:
                 joffset = 1
             # min
-            param_repr = GuiUtils.formatNumber(param_dict[param_name][2+ioffset], high=True)
-            self._magnet_model.item(row, 2+joffset).setText(param_repr)
+            param_repr = GuiUtils.formatNumber(param_dict[param_name][2 + ioffset], high=True)
+            self._magnet_model.item(row, 2 + joffset).setText(param_repr)
             # max
-            param_repr = GuiUtils.formatNumber(param_dict[param_name][3+ioffset], high=True)
-            self._magnet_model.item(row, 3+joffset).setText(param_repr)
+            param_repr = GuiUtils.formatNumber(param_dict[param_name][3 + ioffset], high=True)
+            self._magnet_model.item(row, 3 + joffset).setText(param_repr)
 
         self.iterateOverMagnetModel(updateFittedValues)
 

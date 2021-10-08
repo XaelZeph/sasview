@@ -11,7 +11,7 @@ dependencies:
  - nbformat
  - pyopencl=2018.2.2
  - scipy=1.2.0
- - hdf5=1.10.4
+ - hdf5=1.10.6
  - h5py=3.1
  - lxml=4.6.3
  - twisted=18.9.0
@@ -21,7 +21,7 @@ dependencies:
  - sip
  - numba=0.39
  - setuptools=44.0.0
- - numpy=1.14.2
+ - numpy=1.16.5
  - qtconsole=4.7.5
  - pyzmq=19.0.1
  - pyqt==5.12.3
