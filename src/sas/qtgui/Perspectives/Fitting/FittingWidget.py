@@ -2203,6 +2203,12 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         QtWidgets.QApplication.processEvents()
         self.recalculatePlotData()  # recalc+plot theory again (2nd)
 
+        ## TEST
+
+        param = self.getParameterDict()
+
+        sphere_plot.sphere(param).plot()
+
     def onSmearingOptionsUpdate(self):
         """
         React to changes in the smearing widget
@@ -3031,7 +3037,6 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
         ### TEST
 
-        param = self.getParameterDict()
 
 
 

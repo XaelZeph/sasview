@@ -14,7 +14,7 @@ class sphere:
 
         # self.radius = 1
 
-        self.radius = param['radius'][1]
+        self.radius = float(param['radius'][1])
 
         # Discretization sphere
 
