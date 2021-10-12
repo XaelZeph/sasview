@@ -54,7 +54,7 @@ from sas.qtgui.Perspectives.Fitting import cylinder_plot
 from sas.qtgui.Perspectives.Fitting import ellipsoid_plot
 from sas.qtgui.Perspectives.Fitting import parallelepiped_plot
 from sas.qtgui.Perspectives.Fitting import sphere_plot
-
+from sas.qtgui.Perspectives.Fitting import new_class
 
 
 TAB_MAGNETISM = 4
@@ -2206,8 +2206,9 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         ## TEST
 
         param = self.getParameterDict()
-
-        sphere_plot.sphere(param).plot()
+        print(param)
+        test = plot_model.plotModel(param)
+#        new_class.plotSurface([],test)
 
     def onSmearingOptionsUpdate(self):
         """
@@ -2699,7 +2700,6 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
 
 
-
     def processEffectiveRadius(self):
         """
         Checks the value of radius_effective_mode, if existent, and processes radius_effective as necessary.
@@ -3034,12 +3034,6 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
         # Update radius_effective if relevant
         self.updateEffectiveRadius(return_data)
-
-        ### TEST
-
-
-
-
 
     def complete2D(self, return_data):
         """
