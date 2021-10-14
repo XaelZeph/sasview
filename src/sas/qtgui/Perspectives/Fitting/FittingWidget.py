@@ -2203,11 +2203,7 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         QtWidgets.QApplication.processEvents()
         self.recalculatePlotData()  # recalc+plot theory again (2nd)
 
-        ## TEST
 
-        param = self.getParameterDict()
-
-        sphere_plot.sphere(param).plot()
 
     def onSmearingOptionsUpdate(self):
         """
@@ -2944,6 +2940,12 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         if self.kernel_module is None:
             return
         self.calculateQGridForModelExt()
+
+        ## TEST
+
+        param = self.getParameterDict()
+
+        sphere_plot.sphere(param).plot()
 
     def calculateDataFailed(self, reason):
         """
