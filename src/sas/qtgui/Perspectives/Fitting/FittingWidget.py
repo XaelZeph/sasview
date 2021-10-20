@@ -50,10 +50,6 @@ from sas.qtgui.Perspectives.Fitting.MultiConstraint import MultiConstraint
 from sas.qtgui.Perspectives.Fitting.ReportPageLogic import ReportPageLogic
 from sas.qtgui.Perspectives.Fitting.OrderWidget import OrderWidget
 
-from sas.qtgui.Perspectives.Fitting import cylinder_plot
-from sas.qtgui.Perspectives.Fitting import ellipsoid_plot
-from sas.qtgui.Perspectives.Fitting import parallelepiped_plot
-from sas.qtgui.Perspectives.Fitting import sphere_plot
 from sas.qtgui.Perspectives.Fitting import plot_model_sphere
 from sas.qtgui.Perspectives.Fitting import plot_model_cylinder
 from sas.qtgui.Perspectives.Fitting import plot_model_parallelepiped
