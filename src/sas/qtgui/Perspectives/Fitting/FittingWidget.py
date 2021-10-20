@@ -54,7 +54,9 @@ from sas.qtgui.Perspectives.Fitting import cylinder_plot
 from sas.qtgui.Perspectives.Fitting import ellipsoid_plot
 from sas.qtgui.Perspectives.Fitting import parallelepiped_plot
 from sas.qtgui.Perspectives.Fitting import sphere_plot
-from sas.qtgui.Perspectives.Fitting import new_class
+from sas.qtgui.Perspectives.Fitting import plot_model_sphere
+from sas.qtgui.Perspectives.Fitting import plot_model_cylinder
+from sas.qtgui.Perspectives.Fitting import plot_model_parallelepiped
 
 
 TAB_MAGNETISM = 4
@@ -2203,14 +2205,20 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
         QtWidgets.QApplication.processEvents()
         self.recalculatePlotData()  # recalc+plot theory again (2nd)
 
+        # Bookmark
 
-<<<<<<< HEAD
-=======
         param = self.getParameterDict()
+
         print(param)
-        test = plot_model.plotModel(param)
-#        new_class.plotSurface([],test)
->>>>>>> 24232f516130bed284360123c42685ed4d4550f3
+        if param['fitpage_category'][0] == 'Sphere' or param['fitpage_category'][0] == 'Ellipsoid':
+            test = plot_model_sphere.plotModelSphere(param)
+        elif param['fitpage_category'][0] == 'Cylinder':
+            test = plot_model_cylinder.plotModelCylinder(param)
+        elif param['fitpage_category'][0] == 'Parallelepiped':
+            test = plot_model_parallelepiped.plotModelParallelepiped(param)
+
+        # new_class.plotSurface([],test)
+
 
     def onSmearingOptionsUpdate(self):
         """
@@ -2949,9 +2957,9 @@ class FittingWidget(QtWidgets.QWidget, Ui_FittingWidgetUI):
 
         ## TEST
 
-        param = self.getParameterDict()
+        # param = self.getParameterDict()
 
-        sphere_plot.sphere(param).plot()
+        # sphere_plot.sphere(param).plot()
 
     def calculateDataFailed(self, reason):
         """
