@@ -5,6 +5,8 @@ import  copy
 import sys
 import math
 import numpy as np
+import ast
+import operator as op
 
 from sas.sascalc.dataloader.data_info import Data1D
 from sas.sascalc.dataloader.data_info import Data2D
@@ -454,8 +456,10 @@ class FitEngine:
             fitdata = FitData2D(sas_data2d=data, data=data.data,
                                  err_data=data.err_data)
         else:
-            fitdata = FitData1D(x=data.x, y=data.y,
-                                 dx=data.dx, dy=data.dy, smearer=smearer)
+            y_expressio = self.fit_arrange_dict[id].model.model.get_expression()
+            y_data = safeEval(ast.parse(y_expressio, mode='eval').body, data.x, data.y)
+            dy_data = safeEval(ast.parse(y_expressio, mode='eval').body, data.x, data.dy)
+            fitdata = FitData1D(x=data.x, y=y_data, dx=data.dx, dy=dy_data, smearer=smearer)
         fitdata.sas_data = data
 
         fitdata.set_fit_range(qmin=qmin, qmax=qmax)
@@ -630,3 +634,44 @@ class FResult(object):
         """
         """
         print(str(self))
+
+def safeEval(node, q_vals, I_vals):
+    """ Calculate a string as a line of code
+
+    A safe form of the eval command, only calculates mathematical operators, can accept I, Q, q as variables.
+
+    :param node: expression to calculate
+    :type node: string
+    :param q_vals: q values
+    :type q_vals: np.array
+    :param I_vals: Calculated I values
+    :type I_vals: np.array
+    :return: The calculation outlined in the node string
+    :rtype: np.array
+    :raises TypeError: Exception isn't a variable named I, Q, q; or a mathematical operators.
+    """
+
+    # Supported operators
+    operators = {ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul, ast.Div: op.truediv, ast.Pow: op.pow,
+                 ast.BitXor: op.xor, ast.USub: op.neg}
+
+    # If node is just a number
+    if isinstance(node, ast.Num):
+        return node.n
+    # If mathematical operator eg, <num> <operator> <num>
+    elif isinstance(node, ast.BinOp):
+        return operators[type(node.op)](safeEval(node.left, q_vals, I_vals), safeEval(node.right, q_vals, I_vals))
+    # Special case eg -1
+    elif isinstance(node, ast.UnaryOp):
+        return operators[type(node.op)](safeEval(node.operand, q_vals, I_vals))
+    # Accepted variable name
+    elif isinstance(node, ast.Name):
+        if node.id == "I":
+            return I_vals
+        elif node.id == "Q":
+            return q_vals
+        elif node.id == "q":
+            return q_vals
+    else:
+        raise TypeError(node)
+
