@@ -98,7 +98,7 @@ jobs:
     - name: Install pyopencl (Linux + macOS)
       if: ${{ matrix.os != 'windows-latest' }}
       run: |
-        python -m pip install pyopencl
+        python -m pip install pyopencl==2021.2.13
 
     - name: Install utilities to build installer
       run: |
@@ -213,7 +213,6 @@ jobs:
           primary-bundle-id: "org.sasview.SasView5"
           appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
           appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
-          verbose: True
 
     - name: Staple Release Build (OSX)
       if: ${{ matrix.os == 'macos-latest' }}
