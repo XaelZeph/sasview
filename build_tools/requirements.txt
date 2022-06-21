@@ -27,3 +27,4 @@ matplotlib==3.4.3
 lxml
 pytools 
 cffi
+dominate
