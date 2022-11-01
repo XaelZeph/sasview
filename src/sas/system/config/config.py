@@ -186,6 +186,9 @@ class Config(ConfigBase, metaclass=ConfigMeta):
         self.QT_SCALE_FACTOR = 1.0
         self.QT_AUTO_SCREEN_SCALE_FACTOR = False
 
+        # Flag if residuals should be plotted automatically
+        self.PLOTTING_RESIDUALS_AUTO = True
+
         # If True, use an ugly but more robust legend plotting method in Fitting that results in full-
         # width legends.
         self.FITTING_PLOT_FULL_WIDTH_LEGENDS = False

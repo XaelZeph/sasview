@@ -1083,8 +1083,9 @@ class DataExplorerWindow(DroppableDataLoadWidget):
                 continue
             elif role == Data1D.ROLE_RESIDUAL:
                 # Residual plots should always be separate
-                plot_to_show.yscale='linear'
-                self.plotData([(plot_item, plot_to_show)])
+                if config.PLOTTING_RESIDUALS_AUTO:
+                    plot_to_show.yscale='linear'
+                    self.plotData([(plot_item, plot_to_show)])
             elif append:
                 # Assume all other plots sent together should be on the same chart if a previous plot exists
                 if not plot_to_append_to:
