@@ -188,6 +188,8 @@ class Config(ConfigBase, metaclass=ConfigMeta):
 
         # Flag if residuals should be plotted automatically
         self.PLOTTING_RESIDUALS_AUTO = True
+        # Flag if residuals should be plotted as a short plot below the main plot
+        self.PLOTTING_RESIDUALS_BELOW_MAIN = True
 
         # If True, use an ugly but more robust legend plotting method in Fitting that results in full-
         # width legends.

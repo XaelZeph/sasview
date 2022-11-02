@@ -109,8 +109,17 @@ class PlotterWidget(PlotterBase):
             self.data.append(data)
 
         is_fit = (data.id=="fit")
+        is_residual = (data.plot_role == Data1D.ROLE_RESIDUAL)
 
-        if not is_fit:
+        if is_residual:
+            new_sub_plot = Plotter(self, self.manager.parent)
+            # No replot signals should come from the smaller plot
+            new_sub_plot.blockSignals(True)
+            new_sub_plot.contextMenu.setDisabled(True)
+            new_sub_plot.setBaseSize(self.width(), self.height())
+            new_sub_plot.plot(data, transform=transform)
+            self.verticalLayout.addWidget(new_sub_plot)
+        elif not is_fit:
             # make sure we have some function to operate on
             if data.xtransform is None:
                 if data.isSesans:

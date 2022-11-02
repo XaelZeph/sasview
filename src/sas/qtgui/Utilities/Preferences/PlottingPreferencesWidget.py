@@ -7,6 +7,7 @@ class PlottingPreferencesWidget(PreferencesWidget):
     def __init__(self):
         super(PlottingPreferencesWidget, self).__init__("Plotting Options")
         self.config_params = ['PLOTTING_RESIDUALS_AUTO',
+                              'PLOTTING_RESIDUALS_BELOW_MAIN',
                               'FITTING_PLOT_FULL_WIDTH_LEGENDS',
                               'FITTING_PLOT_LEGEND_TRUNCATE',
                               'FITTING_PLOT_LEGEND_MAX_LINE_LENGTH']
@@ -17,6 +18,11 @@ class PlottingPreferencesWidget(PreferencesWidget):
             checked=config.PLOTTING_RESIDUALS_AUTO)
         self.autoPlotResidual.clicked.connect(
             lambda: self._stageChange('PLOTTING_RESIDUALS_AUTO', self.autoPlotResidual.isChecked()))
+        self.plotResidualsAsSubPlot = self.addCheckBox(
+            title="Plot residuals in same window as main plot?",
+            checked=config.PLOTTING_RESIDUALS_BELOW_MAIN)
+        self.plotResidualsAsSubPlot.clicked.connect(
+            lambda: self._stageChange('PLOTTING_RESIDUALS_BELOW_MAIN', self.plotResidualsAsSubPlot.isChecked()))
         self.legendFullWidth = self.addCheckBox(
             title="Use full-width plot legends (most compatible)?",
             checked=config.FITTING_PLOT_FULL_WIDTH_LEGENDS)
@@ -35,12 +41,14 @@ class PlottingPreferencesWidget(PreferencesWidget):
 
     def _toggleBlockAllSignaling(self, toggle):
         self.autoPlotResidual.blockSignals(toggle)
+        self.plotResidualsAsSubPlot.blockSignals(toggle)
         self.legendFullWidth.blockSignals(toggle)
         self.legendTruncate.blockSignals(toggle)
         self.legendLineLength.blockSignals(toggle)
 
     def _restoreFromConfig(self):
         self.autoPlotResidual.setChecked(config.PLOTTING_RESIDUALS_AUTO)
+        self.plotResidualsAsSubPlot.setChecked(config.PLOTTING_RESIDUALS_BELOW_MAIN)
         self.legendFullWidth.setChecked(config.FITTING_PLOT_FULL_WIDTH_LEGENDS)
         self.legendTruncate.setChecked(config.FITTING_PLOT_LEGEND_TRUNCATE)
         self.legendLineLength.setText(str(config.FITTING_PLOT_LEGEND_MAX_LINE_LENGTH))
