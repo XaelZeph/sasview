@@ -73,9 +73,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: "installers/dist/setupSasView-nightly-Win64.exe,
                       installers/dist/SasView-nightly-MacOSX.dmg,
-                      installers/dist/SasView-nightly-Linux.tar.gz,
-                      installers/dist/nightly-build.zip,
-                      installers/dist/nightly-build.tar.gz"
+                      installers/dist/SasView-nightly-Linux.tar.gz"
           body: "Nightly build of main SasView branch"
           name: "nightly-build-test"
           tag: "nightly-build-test"
