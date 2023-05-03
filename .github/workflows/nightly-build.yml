@@ -13,7 +13,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
     secrets: inherit
 
-  upload_nighly_builds:
+  upload_nightly_builds:
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -21,6 +21,8 @@ jobs:
         os: [ macos-latest]
         python-version: [ 3.8 ]
     needs: reuse_main_ci
+    env:
+      TAG_NAME: 'nightly-build-test'
 
     steps:
       - name: Checkout
@@ -61,13 +63,18 @@ jobs:
         with:
           product-path: "installers/dist/SasView-nightly-MacOSX.dmg"
 
+      - name: Tag latest commit to recreate compressed files
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: $TAG_NAME
+          tag_exists_error: false
+
       - name: Upload Nightly Build Installer to GitHub releases
         uses: ncipollo/release-action@v1
         with:
           draft: true
           prerelease: true
           allowUpdates: true
-          replacesArtifacts: true
           removeArtifacts: true
           commit: ${{ github.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -75,5 +82,5 @@ jobs:
                       installers/dist/SasView-nightly-MacOSX.dmg,
                       installers/dist/SasView-nightly-Linux.tar.gz"
           body: "Nightly build of main SasView branch"
-          name: "nightly-build-test"
-          tag: "nightly-build-test"
+          name: $TAG_NAME
+          tag: $TAG_NAME
