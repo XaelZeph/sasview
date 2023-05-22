@@ -7,9 +7,9 @@ import traceback
 
 from typing import Optional, Dict
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import Qt, QLocale
+from PySide6.QtWidgets import *
+from PySide6.QtGui import *
+from PySide6.QtCore import Qt, QLocale
 
 import matplotlib as mpl
 
@@ -31,6 +31,7 @@ from sas.qtgui.Utilities.TabbedModelEditor import TabbedModelEditor
 from sas.qtgui.Utilities.PluginManager import PluginManager
 from sas.qtgui.Utilities.GridPanel import BatchOutputPanel
 from sas.qtgui.Utilities.ResultPanel import ResultPanel
+from sas.qtgui.Utilities.OrientationViewer.OrientationViewer import show_orientation_viewer
 from sas.qtgui.Utilities.HidableDialog import hidable_dialog
 
 from sas.qtgui.Utilities.Reports.ReportDialog import ReportDialog
@@ -147,9 +148,13 @@ class GuiManager:
         self.logDockWidget.setWidget(self.listWidget)
         self._workspace.addDockWidget(Qt.BottomDockWidgetArea, self.logDockWidget)
 
-        # Preload all perspectives
+        # Preferences Panel must exist before perspectives are loaded
+        self.preferences = PreferencesPanel(self._parent)
+
+        # Load all perspectives - Preferences panel must exist
         self.loadAllPerspectives()
-        # Add FileDialog widget as docked
+
+        # Add FileDialog widget as docked - Perspectives must be loaded to ensure default perspective is shown
         self.filesWidget = DataExplorerWindow(self._parent, self, manager=self._data_manager)
         ObjectLibrary.addObject('DataExplorer', self.filesWidget)
 
@@ -202,6 +207,9 @@ class GuiManager:
             try:
                 loaded_perspective = perspective(parent=self)
                 loaded_dict[name] = loaded_perspective
+                pref_widgets = loaded_perspective.preferences
+                for widget in pref_widgets:
+                    self.preferences.addWidget(widget)
             except Exception as e:
                 logger.error(f"Unable to load {name} perspective.\n{e}")
                 logger.error(e, exc_info=True)
@@ -379,7 +387,7 @@ class GuiManager:
             self.loadedPerspectives[self._current_perspective.name] = self._current_perspective
 
             self._workspace.workspace.removeSubWindow(self._current_perspective)
-            self._workspace.workspace.removeSubWindow(self.subwindow)
+            self._workspace.workspace.closeActiveSubWindow()
 
         # Get new perspective - note that _current_perspective is of type Optional[Perspective],
         # but new_perspective is of type Perspective, thus call to Perspective members are safe
@@ -416,16 +424,18 @@ class GuiManager:
         #
         # Selection on perspective choice menu
         #
-        if isinstance(new_perspective, FittingWindow):
+        # checking `isinstance`` fails in PySide6 with
+        # AttributeError: type object 'FittingWindow' has no attribute '_abc_impl'
+        if type(new_perspective) == FittingWindow:
             self.checkAnalysisOption(self._workspace.actionFitting)
 
-        elif isinstance(new_perspective, InvariantWindow):
+        elif type(new_perspective) == InvariantWindow:
             self.checkAnalysisOption(self._workspace.actionInvariant)
 
-        elif isinstance(new_perspective, InversionWindow):
+        elif type(new_perspective) == InversionWindow:
             self.checkAnalysisOption(self._workspace.actionInversion)
 
-        elif isinstance(new_perspective, CorfuncWindow):
+        elif type(new_perspective) == CorfuncWindow:
             self.checkAnalysisOption(self._workspace.actionCorfunc)
 
 
@@ -645,7 +655,7 @@ class GuiManager:
         #self._workspace.actionImage_Viewer.setVisible(False)
         self._workspace.actionCombine_Batch_Fit.setVisible(False)
         # orientation viewer set to invisible SASVIEW-1132
-        self._workspace.actionOrientation_Viewer.setVisible(False)
+        self._workspace.actionOrientation_Viewer.setVisible(True)
 
         # File
         self._workspace.actionLoadData.triggered.connect(self.actionLoadData)
@@ -725,6 +735,7 @@ class GuiManager:
         
         self.communicate.sendDataToGridSignal.connect(self.showBatchOutput)
         self.communicate.resultPlotUpdateSignal.connect(self.showFitResults)
+
 
     #============ FILE =================
     def actionLoadData(self):
@@ -1016,11 +1027,7 @@ class GuiManager:
         """
         Make sasmodels orientation & jitter viewer available
         """
-        from sasmodels.jitter import run as orientation_run
-        try:
-            orientation_run()
-        except Exception as ex:
-            logging.error(str(ex))
+        show_orientation_viewer()
 
     def actionImage_Viewer(self):
         """
@@ -1073,8 +1080,9 @@ class GuiManager:
     def actionFit_Options(self):
         """
         """
-        if getattr(self._current_perspective, "fit_options_widget"):
-            self._current_perspective.fit_options_widget.show()
+        if hasattr(self._current_perspective, "fit_options_widget"):
+            self.preferences.show()
+            self.preferences.setMenuByName(self._current_perspective.fit_options_widget.name)
         pass
 
     def actionGPU_Options(self):
@@ -1082,7 +1090,8 @@ class GuiManager:
         Load the OpenCL selection dialog if the fitting perspective is active
         """
         if hasattr(self._current_perspective, "gpu_options_widget"):
-            self._current_perspective.gpu_options_widget.show()
+            self.preferences.show()
+            self.preferences.setMenuByName(self._current_perspective.gpu_options_widget.name)
         pass
 
     def actionFit_Results(self):

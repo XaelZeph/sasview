@@ -1,17 +1,16 @@
-import math
-
-from PyQt5 import QtGui
-from PyQt5 import QtWidgets
+from PySide6 import QtGui
+from PySide6 import QtWidgets
 
 import functools
 import copy
+import math
 import matplotlib as mpl
 import numpy as np
 import textwrap
 from matplotlib.font_manager import FontProperties
 from packaging import version
 
-from sas.qtgui.Plotting.PlotterData import Data1D
+from sas.qtgui.Plotting.PlotterData import Data1D, DataRole
 from sas.qtgui.Plotting.PlotterBase import PlotterBase
 from sas.qtgui.Plotting.AddText import AddText
 from sas.qtgui.Plotting.Binder import BindArtist
@@ -33,7 +32,7 @@ class PlotterWidget(PlotterBase):
     1D Plot widget for use with a QDialog
     """
     def __init__(self, parent=None, manager=None, quickplot=False):
-        super(PlotterWidget, self).__init__(parent, manager=manager, quickplot=quickplot)
+        super().__init__(parent, manager=manager, quickplot=quickplot)
 
         self.parent = parent
 
@@ -70,7 +69,8 @@ class PlotterWidget(PlotterBase):
 
         self.legendVisible = True
 
-        parent.geometry()
+        if parent is not None:
+            parent.geometry()
 
     @property
     def data(self):
@@ -236,6 +236,12 @@ class PlotterWidget(PlotterBase):
         if data.show_yzero:
             ax.axhline(color='black', linewidth=1)
 
+        # Display +/- 3 sigma and +/- 1 sigma lines for residual plots
+        if data.plot_role == DataRole.ROLE_RESIDUAL:
+            ax.axhline(y=3, color='red', linestyle='-')
+            ax.axhline(y=-3, color='red', linestyle='-')
+            ax.axhline(y=1, color='gray', linestyle='--')
+            ax.axhline(y=-1, color='gray', linestyle='--')
         # Update the list of data sets (plots) in chart
         self.plot_dict[data.name] = data
 
@@ -691,7 +697,7 @@ class PlotterWidget(PlotterBase):
         marker = selected_plot.symbol
         marker_size = selected_plot.markersize
         # plot name
-        legend = selected_plot.title
+        legend = selected_plot.name
         plotPropertiesWidget = PlotProperties(self,
                                 color=color,
                                 marker=marker,
@@ -702,7 +708,7 @@ class PlotterWidget(PlotterBase):
             selected_plot.markersize = plotPropertiesWidget.markersize()
             selected_plot.custom_color = plotPropertiesWidget.color()
             selected_plot.symbol = plotPropertiesWidget.marker()
-            selected_plot.title = plotPropertiesWidget.legend()
+            selected_plot.name = plotPropertiesWidget.legend()
             # Redraw the plot
             self.replacePlot(id, selected_plot)
 
@@ -1017,8 +1023,7 @@ class PlotterWidget(PlotterBase):
 class Plotter(QtWidgets.QDialog, PlotterWidget):
     def __init__(self, parent=None, quickplot=False):
 
-        QtWidgets.QDialog.__init__(self)
-        PlotterWidget.__init__(self, parent=self, manager=parent, quickplot=quickplot)
+        PlotterWidget.__init__(self, parent=None, manager=parent, quickplot=quickplot)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/res/ball.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
