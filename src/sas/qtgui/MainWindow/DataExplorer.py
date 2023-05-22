@@ -1087,26 +1087,23 @@ class DataExplorerWindow(DroppableDataLoadWidget):
             plot_name = plot_to_show.name
             role = plot_to_show.plot_role
             stand_alone_types = [DataRole.ROLE_RESIDUAL, DataRole.ROLE_STAND_ALONE]
+            stand_alone_residual = config.PLOTTING_RESIDUALS_AUTO and not config.PLOTTING_RESIDUALS_BELOW_MAIN
 
             if (role in stand_alone_types and shown) or role == DataRole.ROLE_DELETABLE:
                 # Nothing to do if stand-alone plot already shown or plot to be deleted
                 continue
-            elif role in stand_alone_types:
-                # Stand-alone plots should always be separate
+            elif role in stand_alone_types and stand_alone_residual:
+                # Stand-alone plots should be plotted separately according to the configuration
                 self.plotData([(plot_item, plot_to_show)])
-            elif role == Data1D.ROLE_RESIDUAL:
-                # Residual plots should always be separate
-                if config.PLOTTING_RESIDUALS_AUTO and not config.PLOTTING_RESIDUALS_BELOW_MAIN:
-                    plot_to_show.yscale='linear'
-                    self.plotData([(plot_item, plot_to_show)])
-                elif config.PLOTTING_RESIDUALS_BELOW_MAIN:
-                    plot_to_append = None
-                    if main_data is not None and main_data.name in self.active_plots:
-                        plot_to_append = self.active_plots[main_data.name]
-                    elif main_data is not None:
-                        self.active_plots[main_data.name] = Plotter()
-                        plot_to_append = self.active_plots[main_data.name]
-                    self.appendOrUpdatePlot(self, plot_to_show, plot_to_append)
+            elif role in stand_alone_types:
+                # 'Stand alone' plots should be plotted below the main plot
+                plot_to_append = None
+                if main_data is not None and main_data.name in self.active_plots:
+                    plot_to_append = self.active_plots[main_data.name]
+                elif main_data is not None:
+                    self.active_plots[main_data.name] = Plotter()
+                    plot_to_append = self.active_plots[main_data.name]
+                self.appendOrUpdatePlot(self, plot_to_show, plot_to_append)
             elif append:
                 # Assume all other plots sent together should be on the same chart if a previous plot exists
                 if not plot_to_append_to:

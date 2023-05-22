@@ -109,10 +109,9 @@ class PlotterWidget(PlotterBase):
             self.data.append(data)
 
         is_fit = (data.id=="fit")
-        is_residual = (data.plot_role == Data1D.ROLE_RESIDUAL)
 
-        if is_residual:
-            new_sub_plot = Plotter(self, self.manager.parent)
+        if data.plot_role in [DataRole.ROLE_RESIDUAL, DataRole.ROLE_STAND_ALONE]:
+            new_sub_plot = Plotter()
             # No replot signals should come from the smaller plot
             new_sub_plot.blockSignals(True)
             new_sub_plot.contextMenu.setDisabled(True)
