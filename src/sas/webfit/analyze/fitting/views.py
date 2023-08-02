@@ -62,12 +62,7 @@ def start(request, version = None):
     if request.method == "POST":
         #TODO set status
         #TODO add qmin/qmax
-        #TODO add 
-
-        #{str: param_name: value}
-        pars = None
-        #{str:param_name:{lower, upper}}
-        par_limits = None
+        #TODO add constraints
 
         base_serializer = FitSerializer(data=request.data)
         if base_serializer.is_valid():
@@ -76,6 +71,7 @@ def start(request, version = None):
             return Response(base_serializer.errors)
         
         fit_db = get_object_or_404(Fit, id = base_serializer.data["id"])
+        #fit_db.status = 1
 
         #try to create model for check if the modelstring is valid
         if load_model(fit_db.model):
@@ -94,58 +90,36 @@ def start(request, version = None):
 
         if request.data.get("parameters"):
             parameters = request.data.get("parameters")
-            
-            #list of FitParameter objects
-            all_param_dbs = []
             for x in parameters:
                 x["base_id"] = fit_db.id
                 parameter_serializer = FitParameterSerializer(data = x)
                 if parameter_serializer.is_valid():
                     parameter_serializer.save()
-                all_param_dbs.append(get_object_or_404(FitParameter, base_id = fit_db.id, name = x["name"]))
 
-        #TODO remove below code later -> scheduling fits with status
+        #refresh fit object
+        fit_db = get_object_or_404(Fit, id = base_serializer.data["id"])
+        #TODO create queue function to move to
         #start_fit connection for WORKING MODEL, NOT finalized api
-        result = start_fit(fit_db, all_param_dbs)
+        result = start_fit(fit_db)
 
-        result_serializer = FitSerializer(fit_db, data = {"results": result}, partial=True)
+        result_serializer = FitSerializer(fit_db, data = {"results": result, "status": 3}, partial=True)
         if result_serializer.is_valid():
             result_serializer.save()
         else:
             return Response(result_serializer.errors)
         
         #add "warnings": ... later
-        return Response({"authenticated":request.user.is_authenticated, "fit_id":fit_db.id, "results": result})
+        return Response({"authenticated":request.user.is_authenticated, "fit_id":fit_db.id, "status":fit_db.status})
 
     return HttpResponseBadRequest()
 
 
-def start_fit(fit_db = None, par_dbs = None):
+def start_fit(fit_db = None):
+    #fit_db.status = 2
     current_model = load_model(fit_db.model)
-    default_parameters = load_model_info(fit_db.model).parameters.defaults
 
-    if par_dbs:
-        pars = {}
-        par_limits = {}
-        for x in par_dbs:
-            num = eval(f"{x.data_type}({x.value})")
-            #TODO check if x.name is a valid parameter else return blah
-            #pars = {x.name: num for x in parameter_serializer.data for num = eval(...)}
-            pars[x.name] = num
-
-            #TODO reduce redundancies
-            one_limit = {}
-            if x.lower_limit:
-                one_limit.update({"lower":x.lower_limit})
-            if x.upper_limit:
-                one_limit.update({"upper":x.upper_limit})
-            par_limits.update({x.name:one_limit})
-        #add in default parameters that don't exist
-        for key, value in default_parameters.items():
-            if key not in pars.keys():
-                pars[key] = value
-    else:
-        pars = default_parameters
+    pars = get_parameters(fit_db.id)[0]
+    par_limits = get_parameters(fit_db.id)[1]
 
     if not fit_db.data_id:
         #TODO impliment qmin/qmax
@@ -168,7 +142,6 @@ def start_fit(fit_db = None, par_dbs = None):
         test_data = loader.load(f.path)[0]"""
         f = fit_db.data_id.file
         test_data = load_data(f.path)
-        test_data.dy = 0.2*test_data.y
         M = Experiment(data = test_data, model=model)
         problem = FitProblem(M)
         if fit_db.optimizer:
@@ -186,55 +159,73 @@ def start_fit(fit_db = None, par_dbs = None):
     return result <- and whatever func this returns to sets ^^
     """
 
-"""
-for x, values in request.data.get("fit").items():
-    
+def get_parameters(fit_id):
+    fit_db = get_object_or_404(Fit, id = fit_id)
+    default_parameters = load_model_info(fit_db.model).parameters.defaults
+    if fit_db.analysisparameterbase_set.all():
+        pars = {}
+        par_limits = {}
+        for x in fit_db.analysisparameterbase_set.all():
+            num = eval(f"{x.data_type}({x.value})")
+            #TODO check if x.name is a valid parameter else return blah
+            #pars = {x.name: num for x in parameter_serializer.data for num = eval(...)}
+            pars[x.name] = num
 
-{
-"fit": {
-1: {
-"fit_id":1
-},
-2: {
-"model":...
-},
-3: 2,
-4: {
-
-}
-}
-}
-"""
-
-"""def create_constraints(request, version=None):
-    new_param_obj = FitParameter.objects.filter(base_id = Fit.id)
-for x in new_param_obj:
-    if request.namewlfjoewiojfejf:
-        get value of new param obj
-
-def """
+            #TODO make it not create blank dicts for no limits
+            one_limit = {}
+            if x.lower_limit:
+                one_limit.update({"lower":x.lower_limit})
+            if x.upper_limit:
+                one_limit.update({"upper":x.upper_limit})
+            par_limits.update({x.name:one_limit})
+        #add in default parameters that don't exist
+        for key, value in default_parameters.items():
+            if key not in pars.keys():
+                pars[key] = value
+    #TODO check if this is necessary
+    else:
+        pars = default_parameters
+    return [pars, par_limits]
 
 @api_view(['GET'])
-def status(request, fit_id, version=None):
-    if fit_id:
-        fit_db = get_object_or_404(Fit, id = fit_id)
-        if fit_db.is_public or request.user.is_authenticated: #do I need to add request.user = fit_db.current_user
-            return Response(fit_db.status)
-        return HttpResponseBadRequest("You are not authorized to see this private fit")
-    return HttpResponseBadRequest("you have not submitted a fit_id")
+def view_results(request, fit_id, version=None):
+    if request.method == 'GET':
+        fit_obj = get_object_or_404(Fit, id = fit_id)
+        return Response({"results":fit_obj.results})
+    return HttpResponseBadRequest()
 
 
 @api_view(['GET'])
-def fit_status(request, fit_id, version = None):
-    fit_obj = get_object_or_404(Fit, id = fit_id)
+def status(request, fit_id = None, version = None):
     if request.method == "GET":
         #TODO figure out private later <- probs write in Fit model
-        if not (fit_obj.is_public or request.user.is_authenticated):
-            return HttpResponseBadRequest("user isn't logged in")
-        return_info = {"fit_id" : fit_id, "status" : Fit.status}
-        if Fit.results:
-            return_info+={"results" : Fit.results}
+        return_info = {}
+        if fit_id:
+            fit_obj = get_object_or_404(Fit, id = fit_id)
+            if fit_obj.is_public or request.user.is_authenticated:
+                return_info = {"fit_id" : fit_id, "status" : fit_obj.status}
+        elif request.user.is_authenticated:
+            fit_obj = Fit.objects.filter(current_user = request.user)
+            for x in fit_obj:
+                return_info[x.id] = x.status
         return Response(return_info)
+    return HttpResponseBadRequest()
+
+
+@api_view(['GET'])
+def view_parameters(request, fit_id, version = None):
+    if request.method == "GET":
+        return Response({"parameters": get_parameters(fit_id)[0], "parameter limits": get_parameters(fit_id)[1]})
+    return HttpResponseBadRequest()
+
+
+@api_view(['GET'])
+def fit_info(request, fit_id, version = None):
+    if request.method == "GET":
+        f = status(request=request._request, fit_id=fit_id).data
+        x = view_parameters(request = request._request, fit_id=fit_id).data
+        r = view_results(request = request._request, fit_id=fit_id).data
+        return Response({"status" : f, "parameters" : x, "results" : r})
     return HttpResponseBadRequest()
 
 
