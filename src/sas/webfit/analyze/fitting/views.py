@@ -58,7 +58,7 @@ Documentation for user input: User input should look like this:
 """
 
 @api_view(['POST'])
-def start(request, version = None):
+def define_single_fit(request, version = None):
     if request.method == "POST":
         #TODO set status
         #TODO add qmin/qmax
@@ -95,24 +95,45 @@ def start(request, version = None):
                 parameter_serializer = FitParameterSerializer(data = x)
                 if parameter_serializer.is_valid():
                     parameter_serializer.save()
-
-        #refresh fit object
-        fit_db = get_object_or_404(Fit, id = base_serializer.data["id"])
-        #TODO create queue function to move to
-        #start_fit connection for WORKING MODEL, NOT finalized api
-        result = start_fit(fit_db)
-
-        result_serializer = FitSerializer(fit_db, data = {"results": result, "status": 3}, partial=True)
-        if result_serializer.is_valid():
-            result_serializer.save()
-        else:
-            return Response(result_serializer.errors)
         
         #add "warnings": ... later
         return Response({"authenticated":request.user.is_authenticated, "fit_id":fit_db.id, "status":fit_db.status})
 
     return HttpResponseBadRequest()
 
+#TODO create constraints
+"""
+DOCUMENTATION FOR CONSTRAINTS
+for x, values in request.data.get("fit").items():
+
+
+send multiple fits and each would be named/numbered
+names are a list of "name1.parameter" to be able to 
+request.data would look like:
+{
+    "fit": {
+        1: {
+            "fit_id":1
+        },
+        2: {
+            "model":...
+        },
+        3: 2,
+        4: {
+
+        }
+    }
+}
+"""
+
+def multiple_fits():
+    define_single_fit
+    start_fit()
+    multipleFits.addwefowifjwio
+
+def single_fit():
+    define_single_fit
+    start_fit()
 
 def start_fit(fit_db = None):
     #fit_db.status = 2
@@ -143,13 +164,14 @@ def start_fit(fit_db = None):
         f = fit_db.data_id.file
         test_data = load_data(f.path)
         M = Experiment(data = test_data, model=model)
+        #TODO be able to do multiple experiments
         problem = FitProblem(M)
         if fit_db.optimizer:
             result = fit(problem, method=fit_db.optimizer)
         else:
             result = fit(problem)
 
-    return problem.chisq_str()
+    return result
 
     #TODO below code is in testing, used for when fit/ is scheduled with status
     """
@@ -158,6 +180,31 @@ def start_fit(fit_db = None):
     OR...
     return result <- and whatever func this returns to sets ^^
     """
+
+
+def queueing():
+    #TODO remove below code later -> scheduling fits with status
+    #start_fit connection for WORKING MODEL, NOT finalized api
+    result = start_fit(fit_db)
+
+    result_serializer = FitSerializer(fit_db, data = {"results": result}, partial=True)
+    if result_serializer.is_valid():
+        result_serializer.save()
+    else:
+        return Response(result_serializer.errors)
+
+#TODO create get_par into it's own function
+
+
+
+"""
+def create_constraints(request, version=None):
+    new_param_obj = FitParameter.objects.filter(base_id = Fit.id)
+    for x in new_param_obj:
+        if request...:
+            get value of new param obj
+
+"""
 
 def get_parameters(fit_id):
     fit_db = get_object_or_404(Fit, id = fit_id)
@@ -268,5 +315,3 @@ def list_model(request, version = None):
                 listed_models += {"plugin_models": user_models}
         """
     return HttpResponseBadRequest()
-
-#takes DataInfo and saves it into to specified file location

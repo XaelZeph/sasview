@@ -33,6 +33,7 @@ from django.core.exceptions import (
 models_logger = getLogger(__name__)
 
 class AnalysisBase(models.Model):
+    name = models.CharField(max_length=300, blank=True, null = True, help_text="Name of Analysis")
     current_user = models.ForeignKey(User, blank=True, null=True, on_delete=models.CASCADE)
     data_id = models.ForeignKey(Data, blank=True, null=True, on_delete=models.CASCADE)
     
@@ -71,10 +72,9 @@ class AnalysisParameterBase(models.Model):
     ]
 
     
-"""class AnalysisConstraint(models.Model):
-    par1 = models.ManyToManyField(AnalysisParameterBase)
+class AnalysisConstraint(models.Model):
+    par1 = models.ManyToManyField(AnalysisParameterBase, default = None, on_delete=models.CASCADE)
 
-    par2 = models.IntegerField(AnalysisParameterBase)
+    par2 = models.ManyToManyField(AnalysisParameterBase, default = None, on_delete=models.CASCADE)
 
-    constraint = models.CharField(max_length=300, blank = False, help_text="string equality defining how fit params are constrained to another fit parameter")
-"""
+    constraint_string = models.CharField(max_length=300, blank = False, help_text="aaaaaaaaaa")

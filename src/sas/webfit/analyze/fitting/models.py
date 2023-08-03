@@ -2,7 +2,7 @@ import sys
 from enum import Enum
 from logging import getLogger
 from types import ModuleType
-from analyze.models import AnalysisBase, AnalysisParameterBase #AnalysisConstraint
+from analyze.models import AnalysisBase, AnalysisParameterBase, AnalysisConstraint
 
 from sas.sascalc.fit.models import ModelManager
 from sasdata.dataloader.loader import Loader
@@ -18,16 +18,6 @@ from django.core.exceptions import (
     ObjectDoesNotExist,
     ValidationError,
 )
-#models.CharField(max_length=100, blank=False, null=False)
-#models.CharField(max_length=200, help_text="")
-#models.ForeignKey("other model class name", on_delete=models.CASCADE) <--- used for refering to other models in other apps
-"""CHOICES= [
-   "choice",
-    (
-        ("choice1", "choice2),
-        ("group choice","2nd choice in group"),
-    ),
- ]"""
 
 models_logger = getLogger(__name__)
 
@@ -64,4 +54,5 @@ class FitParameter(AnalysisParameterBase):
 
     magnetic = models.BooleanField(default=False, help_text="is this a magnetic parameter?")
 
-#lass FitConstriant(AnalysisConstraint):
+class FitConstriant(AnalysisConstraint):
+    pass
