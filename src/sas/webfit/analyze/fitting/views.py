@@ -57,7 +57,7 @@ Documentation for user input: User input should look like this:
 }
 """
 
-@api_view(['POST'])
+
 def define_single_fit(request, version = None):
     if request.method == "POST":
         #TODO set status
@@ -126,15 +126,20 @@ request.data would look like:
 }
 """
 
+@api_view()
 def multiple_fits():
-    define_single_fit
+    if request.data.get("fit")
+    for ...
+        fit_list+=define_single_fit()
     start_fit()
-    multipleFits.addwefowifjwio
+    multipleFits.add wefowifjwio
 
+@api_view()
 def single_fit():
-    define_single_fit
-    start_fit()
+    fit_id = define_single_fit()
+    start_fit(fit_id)
 
+#TODO replace fit_db with fit_id
 def start_fit(fit_db = None):
     #fit_db.status = 2
     current_model = load_model(fit_db.model)
@@ -142,6 +147,8 @@ def start_fit(fit_db = None):
     pars = get_parameters(fit_db.id)[0]
     par_limits = get_parameters(fit_db.id)[1]
 
+    if fit_db is obj:
+        fit_db = [fit_db]
     if not fit_db.data_id:
         #TODO impliment qmin/qmax
         test_data = empty_data1D(np.log10(1e-4), np.log10(1), 10000)
